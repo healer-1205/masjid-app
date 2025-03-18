@@ -1,0 +1,2 @@
+D:/my_practise/mosque_app/android/app/.cxx/Debug/h514i53k/x86/CMakeFiles/edit_cache.dir
+D:/my_practise/mosque_app/android/app/.cxx/Debug/h514i53k/x86/CMakeFiles/rebuild_cache.dir
