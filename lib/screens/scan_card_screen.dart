@@ -3,23 +3,22 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:mek_stripe_terminal/mek_stripe_terminal.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:mosque_donation_app/utils/constants.dart';
 import 'package:mosque_donation_app/models/post_donation_info_model.dart';
 import 'package:mosque_donation_app/screens/payment_confirmation_screen.dart';
 import 'package:mosque_donation_app/utils/app_utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:sizer/sizer.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ScanPage extends StatefulWidget {
   final ModelPostDonationInfo? modelPostDonationInfo;
   final String donationAmount;
 
-
-  const ScanPage({super.key, this.modelPostDonationInfo, required this.donationAmount});
+  const ScanPage(
+      {super.key, this.modelPostDonationInfo, required this.donationAmount});
 
   @override
   _ScanPageState createState() => _ScanPageState();
@@ -34,7 +33,7 @@ class _ScanPageState extends State<ScanPage> {
   Reader? _reader;
   bool showSpinner = false;
 
-  static const bool _isSimulated = false; //if testing >> true otherwise false
+  static const bool _isSimulated = true; //if testing >> true otherwise false
 
   //Tap & Pay
   StreamSubscription? _onConnectionStatusChangeSub;
@@ -49,8 +48,18 @@ class _ScanPageState extends State<ScanPage> {
 
   StreamSubscription? _discoverReaderSub;
 
-  void _startDiscoverReaders(Terminal terminal) {
+  void _startDiscoverReaders(Terminal terminal) async {
     showSnackBar("Discovering Readers...");
+
+    // Ensure previous discovery process is stopped
+    _stopDiscoverReaders();
+
+    // Disconnect from any currently connected reader before starting a new discovery
+    if (_terminal!.getConnectedReader() != null) {
+      showSnackBar("Disconnecting from previous reader...");
+      await _terminal!.disconnectReader();
+    }
+
     isScanning = true;
     _readers = [];
     final discoverReaderStream =
@@ -93,8 +102,12 @@ class _ScanPageState extends State<ScanPage> {
     });
   }
 
-  void _stopDiscoverReaders() {
-    unawaited(_discoverReaderSub?.cancel());
+  void _stopDiscoverReaders() async {
+    if (_discoverReaderSub != null) {
+      await _discoverReaderSub?.cancel();
+    }
+
+    // unawaited(_discoverReaderSub?.cancel());
     setState(() {
       _discoverReaderSub = null;
       isScanning = false;
@@ -105,20 +118,20 @@ class _ScanPageState extends State<ScanPage> {
 
   Future<void> _connectReader(Terminal terminal, Reader reader) async {
     try {
+      final newToken =
+          await getConnectionToken(); // Fetch new token before connecting
+
       await _tryConnectReader(terminal, reader).then((value) {
         final connectedReader = value;
         if (connectedReader == null) {
-          showSnackBar(
-              'Error connecting to reader! Please try again');
-        }
-        else {
+          showSnackBar('Error connecting to reader! Please try again');
+        } else {
           _reader = connectedReader;
           showSnackBar(
               'Connected to the reader: ${connectedReader.serialNumber}');
         }
       });
-    }
-    catch (e){
+    } catch (e) {
       showSnackBar(e.toString());
       setState(() {
         showSpinner = false;
@@ -129,13 +142,11 @@ class _ScanPageState extends State<ScanPage> {
   Future<Reader?> _tryConnectReader(Terminal terminal, Reader reader) async {
     try {
       String? getLocationId() {
-        showSnackBar(
-            'Fetching location...');
+        showSnackBar('Fetching location...');
 
         final locationId = _selectedLocation?.id ?? reader.locationId;
         if (locationId == null) {
-          showSnackBar(
-              'Missing location');
+          showSnackBar('Missing location');
         }
 
         return locationId;
@@ -147,8 +158,7 @@ class _ScanPageState extends State<ScanPage> {
         reader,
         locationId: locationId ?? "",
       );
-    }
-    catch(e){
+    } catch (e) {
       showSnackBar(e.toString());
       setState(() {
         showSpinner = false;
@@ -156,8 +166,6 @@ class _ScanPageState extends State<ScanPage> {
     }
     return null;
   }
-
-
 
   Future<void> _fetchLocations() async {
     final locations = await _terminal!.listLocations();
@@ -211,34 +219,36 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   Future<void> initTerminal() async {
-    final connectionToken = await getConnectionToken();
+    // final connectionToken = await getConnectionToken();
     final terminal = await Terminal.getInstance(
       shouldPrintLogs: false,
       fetchToken: () async {
-        return connectionToken;
+        // return connectionToken;
+        return await getConnectionToken(); // Always fetch a new token
       },
-    ).then((terminal){
+    ).then((terminal) {
       _terminal = terminal;
       // showSnackBar("Initialized Stripe Terminal");
       _onConnectionStatusChangeSub =
           terminal.onConnectionStatusChange.listen((status) {
-            print('Connection Status Changed: ${status.name}');
-            _connectionStatus = status;
-            scanStatus = _connectionStatus.name;
-          });
+        print('Connection Status Changed: ${status.name}');
+        _connectionStatus = status;
+        scanStatus = _connectionStatus.name;
+      });
       _onUnexpectedReaderDisconnectSub =
           terminal.onUnexpectedReaderDisconnect.listen((reader) {
-            print('Reader Unexpected Disconnected: ${reader.label}');
-          });
-      _onPaymentStatusChangeSub = terminal.onPaymentStatusChange.listen((status) {
+        print('Reader Unexpected Disconnected: ${reader.label}');
+      });
+      _onPaymentStatusChangeSub =
+          terminal.onPaymentStatusChange.listen((status) {
         print('Payment Status Changed: ${status.name}');
         _paymentStatus = status;
       });
       if (_terminal == null) {
         print('Please try again later!');
+      } else {
+        _startDiscoverReaders(terminal);
       }
-
-      _startDiscoverReaders(terminal);
     });
   }
 
@@ -251,20 +261,21 @@ class _ScanPageState extends State<ScanPage> {
       ));
   }
 
-
   bool _isPaymentSuccessful = false;
   PaymentIntent? _paymentIntent;
   final _formKey = GlobalKey<FormState>();
 
-
   Future<bool> _createPaymentIntent(Terminal terminal, String amount) async {
     showSnackBar("Creating payment intent...");
+    setState(() {
+      showSpinner = true; // Show loader
+    });
 
     try {
       final paymentIntent =
-      await terminal.createPaymentIntent(PaymentIntentParameters(
-        amount:
-        (double.parse(double.parse(amount).toStringAsFixed(2)) * 100).ceil(),
+          await terminal.createPaymentIntent(PaymentIntentParameters(
+        amount: (double.parse(double.parse(amount).toStringAsFixed(2)) * 100)
+            .ceil(),
         currency: "GBP",
         captureMethod: CaptureMethod.automatic,
         paymentMethodTypes: [PaymentMethodType.cardPresent],
@@ -273,9 +284,12 @@ class _ScanPageState extends State<ScanPage> {
       if (_paymentIntent == null) {
         showSnackBar('Payment intent is not created!');
       }
-    }
-    catch(e){
+    } catch (e) {
       showSnackBar("Payment Intent error: $e");
+    } finally {
+      setState(() {
+        showSpinner = false; // Hide loader
+      });
     }
 
     return await _collectPaymentMethod(terminal, _paymentIntent!);
@@ -298,7 +312,8 @@ class _ScanPageState extends State<ScanPage> {
     } on TerminalException catch (exception) {
       switch (exception.code) {
         case TerminalExceptionCode.canceled:
-          showSnackBar('Collecting Payment method is cancelled! Exception: ${exception.message}');
+          showSnackBar(
+              'Collecting Payment method is cancelled! Exception: ${exception.message}');
           return false;
         default:
           rethrow;
@@ -308,11 +323,15 @@ class _ScanPageState extends State<ScanPage> {
 
   Future<void> _confirmPaymentIntent(
       Terminal terminal, PaymentIntent paymentIntent) async {
+    setState(() {
+      showSpinner = true; // Show loader
+    });
+
     try {
       showSnackBar('Processing!');
 
       final processedPaymentIntent =
-      await terminal.confirmPaymentIntent(paymentIntent);
+          await terminal.confirmPaymentIntent(paymentIntent);
       _paymentIntent = processedPaymentIntent;
       // Show the animation for a while and then reset the state
       Future.delayed(const Duration(seconds: 3), () {
@@ -328,47 +347,51 @@ class _ScanPageState extends State<ScanPage> {
           context,
           MaterialPageRoute(
               builder: (context) => const PaymentConfirmationScreen(
-                paymentStatus: true,
-              )));
+                    paymentStatus: true,
+                  )));
     } catch (e) {
       showSnackBar('Inside collect payment exception ${e.toString()}');
       Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => const PaymentConfirmationScreen(
-                paymentStatus: false,
-              )));
+                    paymentStatus: false,
+                  )));
       print(e.toString());
+    } finally {
+      setState(() {
+        showSpinner = false; // Hide loader
+      });
     }
     // navigate to payment success screen
   }
 
   void _collectPayment() async {
     // if (_formKey.currentState!.validate()) {
+    setState(() {
+      showSpinner = true; // Show loader
+    });
+
     try {
       showSnackBar("Terminal Connected: ${_terminal?.getConnectedReader()}");
-      bool status = await _createPaymentIntent(
-          _terminal!, widget.donationAmount);
+      bool status =
+          await _createPaymentIntent(_terminal!, widget.donationAmount);
       if (status) {
         showSnackBar('Payment Collected: ${widget.donationAmount}');
       } else {
         Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) =>
-                const PaymentConfirmationScreen(
-                  paymentStatus: false,
-                )));
+                builder: (context) => const PaymentConfirmationScreen(
+                      paymentStatus: false,
+                    )));
         showSnackBar('Payment Cancelled');
       }
-    }
-    catch(e){
+    } catch (e) {
       showSnackBar("Collect Payment Exception: $e");
     }
     // }
   }
-
-
 
   @override
   void initState() {
@@ -380,11 +403,23 @@ class _ScanPageState extends State<ScanPage> {
     _initTerminal();
   }
 
+  Future<void> restartTerminalSession() async {
+    if (_terminal != null && _terminal!.getConnectedReader() != null) {
+      await _terminal?.disconnectReader();
+    }
+
+    await initTerminal(); // Re-initialize with a fresh token
+  }
 
   @override
   void dispose() {
+    _stopDiscoverReaders(); // Ensure discovery is stopped
+
+    // Ensure reader is disconnected when leaving the page
+    restartTerminalSession();
+
     unawaited(_onConnectionStatusChangeSub?.cancel());
-    unawaited(_discoverReaderSub?.cancel());
+    // unawaited(_discoverReaderSub?.cancel());
     unawaited(_onUnexpectedReaderDisconnectSub?.cancel());
     unawaited(_onPaymentStatusChangeSub?.cancel());
     super.dispose();
@@ -436,7 +471,8 @@ class _ScanPageState extends State<ScanPage> {
                               setState(() {
                                 showSpinner = true;
                               });
-                              await _connectReader(_terminal!, reader).then((v) {
+                              await _connectReader(_terminal!, reader)
+                                  .then((v) {
                                 setState(() {
                                   showSpinner = false;
                                 });
@@ -454,9 +490,10 @@ class _ScanPageState extends State<ScanPage> {
                               });
                             },
                             child: Text(
-                              "Device Type: ${reader.deviceType?.name}\nSerial No.: ${reader.serialNumber}" ?? "",
-                              style:
-                                  TextStyle(fontSize: 4.w, color: kPrimaryColor),
+                              "Device Type: ${reader.deviceType?.name}\nSerial No.: ${reader.serialNumber}" ??
+                                  "",
+                              style: TextStyle(
+                                  fontSize: 4.w, color: kPrimaryColor),
                             ),
                           ),
                         )),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mosque_donation_app/models/post_donation_info_model.dart';
-import 'package:mosque_donation_app/screens/payment_confirmation_screen.dart';
 import 'package:mosque_donation_app/screens/scan_card_screen.dart';
 import 'package:mosque_donation_app/utils/app_utils.dart';
 import 'package:sizer/sizer.dart';
@@ -9,7 +8,9 @@ class EnterPaymentScreen extends StatefulWidget {
   // final Terminal terminal;
   final ModelPostDonationInfo modelPostDonationInfo;
 
-  const EnterPaymentScreen({super.key, /*required this.terminal,*/ required this.modelPostDonationInfo});
+  const EnterPaymentScreen(
+      {super.key,
+      /*required this.terminal,*/ required this.modelPostDonationInfo});
 
   @override
   State<EnterPaymentScreen> createState() => _EnterPaymentScreenState();
@@ -18,6 +19,7 @@ class EnterPaymentScreen extends StatefulWidget {
 class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
   var donationCustomAmountController = TextEditingController();
   int donationFixedAmountSelected = 0;
+
   // bool _isPaymentSuccessful = false;
   // PaymentIntent? _paymentIntent;
   // final _formKey = GlobalKey<FormState>();
@@ -26,7 +28,7 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
   void initState() {
     super.initState();
     // WidgetsBinding.instance.addPostFrameCallback((_) {
-      // showSnackBar("Connected");
+    // showSnackBar("Connected");
     // });
   }
 
@@ -147,7 +149,6 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
   //   // }
   // }
 
-
   void showSnackBar(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -213,6 +214,11 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                         onTap: () {
                           setState(() {
                             donationFixedAmountSelected = 5;
+                            donationCustomAmountController =
+                                TextEditingController(text: '5');
+                            /*donationCustomAmountController = TextEditingController(
+                                text:
+                                '${AppUtils.currency(context).currencySymbol}5');*/
                           });
                         },
                         child: Container(
@@ -223,7 +229,7 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                                   color: const Color(0xffECAE03),
                                   width:
                                       donationFixedAmountSelected == 5 ? 3 : 0),
-                              color: const Color(0xffECAE03).withOpacity(0.25),
+                              color: const Color(0xffECAE03).withAlpha((0.25 * 255).toInt()),
                               borderRadius: BorderRadius.circular(5.w)),
                           child: Center(
                             child: Text.rich(
@@ -259,6 +265,8 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                         onTap: () {
                           setState(() {
                             donationFixedAmountSelected = 10;
+                            donationCustomAmountController =
+                                TextEditingController(text: '10');
                           });
                         },
                         child: Container(
@@ -270,7 +278,7 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                                   width: donationFixedAmountSelected == 10
                                       ? 3
                                       : 0),
-                              color: const Color(0xffDC4DDA).withOpacity(0.25),
+                              color: const Color(0xffDC4DDA).withAlpha((0.25 * 255).toInt()),
                               borderRadius: BorderRadius.circular(5.w)),
                           child: Center(
                             child: Text.rich(
@@ -306,6 +314,8 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                         onTap: () {
                           setState(() {
                             donationFixedAmountSelected = 15;
+                            donationCustomAmountController =
+                                TextEditingController(text: '15');
                           });
                         },
                         child: Container(
@@ -317,7 +327,7 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                                   width: donationFixedAmountSelected == 15
                                       ? 3
                                       : 0),
-                              color: const Color(0xffDA6600).withOpacity(0.25),
+                              color: const Color(0xffDA6600).withAlpha((0.25 * 255).toInt()),
                               borderRadius: BorderRadius.circular(5.w)),
                           child: Center(
                             child: Text.rich(
@@ -353,13 +363,15 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                         onTap: () {
                           setState(() {
                             donationFixedAmountSelected = 25;
+                            donationCustomAmountController =
+                                TextEditingController(text: '25');
                           });
                         },
                         child: Container(
                           width: 18.w,
                           height: 5.h,
                           decoration: BoxDecoration(
-                              color: const Color(0xff02A6B4).withOpacity(0.25),
+                              color: const Color(0xff02A6B4).withAlpha((0.25 * 255).toInt()),
                               border: Border.all(
                                   color: const Color(0xff02A6B4),
                                   width: donationFixedAmountSelected == 25
@@ -455,7 +467,12 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => ScanPage(modelPostDonationInfo: widget.modelPostDonationInfo, donationAmount: donationFixedAmountSelected.toString(),)));
+                          builder: (context) => ScanPage(
+                                modelPostDonationInfo:
+                                    widget.modelPostDonationInfo,
+                                donationAmount:
+                                    donationFixedAmountSelected.toString(),
+                              )));
 
                   // showTapToPayPopup();
                 },
