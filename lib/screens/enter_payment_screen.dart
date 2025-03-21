@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mosque_donation_app/models/post_donation_info_model.dart';
+import 'package:mosque_donation_app/screens/pos_payment_screen.dart';
 import 'package:mosque_donation_app/screens/scan_card_screen.dart';
 import 'package:mosque_donation_app/utils/app_utils.dart';
 import 'package:sizer/sizer.dart';
@@ -229,7 +230,8 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                                   color: const Color(0xffECAE03),
                                   width:
                                       donationFixedAmountSelected == 5 ? 3 : 0),
-                              color: const Color(0xffECAE03).withAlpha((0.25 * 255).toInt()),
+                              color: const Color(0xffECAE03)
+                                  .withAlpha((0.25 * 255).toInt()),
                               borderRadius: BorderRadius.circular(5.w)),
                           child: Center(
                             child: Text.rich(
@@ -278,7 +280,8 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                                   width: donationFixedAmountSelected == 10
                                       ? 3
                                       : 0),
-                              color: const Color(0xffDC4DDA).withAlpha((0.25 * 255).toInt()),
+                              color: const Color(0xffDC4DDA)
+                                  .withAlpha((0.25 * 255).toInt()),
                               borderRadius: BorderRadius.circular(5.w)),
                           child: Center(
                             child: Text.rich(
@@ -327,7 +330,8 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                                   width: donationFixedAmountSelected == 15
                                       ? 3
                                       : 0),
-                              color: const Color(0xffDA6600).withAlpha((0.25 * 255).toInt()),
+                              color: const Color(0xffDA6600)
+                                  .withAlpha((0.25 * 255).toInt()),
                               borderRadius: BorderRadius.circular(5.w)),
                           child: Center(
                             child: Text.rich(
@@ -371,7 +375,8 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                           width: 18.w,
                           height: 5.h,
                           decoration: BoxDecoration(
-                              color: const Color(0xff02A6B4).withAlpha((0.25 * 255).toInt()),
+                              color: const Color(0xff02A6B4)
+                                  .withAlpha((0.25 * 255).toInt()),
                               border: Border.all(
                                   color: const Color(0xff02A6B4),
                                   width: donationFixedAmountSelected == 25
@@ -463,16 +468,22 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                     donationFixedAmountSelected = int.parse(
                         donationCustomAmountController.text.toString());
                   }
+//new api functionality
 
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => ScanPage(
-                                modelPostDonationInfo:
-                                    widget.modelPostDonationInfo,
-                                donationAmount:
-                                    donationFixedAmountSelected.toString(),
-                              )));
+                          builder: (context) => PosPaymentScreen()));
+// old functionality
+                  // Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //         builder: (context) => ScanPage(
+                  //               modelPostDonationInfo:
+                  //                   widget.modelPostDonationInfo,
+                  //               donationAmount:
+                  //                   donationFixedAmountSelected.toString(),
+                  //             )));
 
                   // showTapToPayPopup();
                 },

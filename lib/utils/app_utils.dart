@@ -37,7 +37,7 @@ class AppUtils {
   static String giftAidHeader = "${baseImage}gift_aid_header.png";
   static String gift = "${baseImage}img_gift.png";
   static String tapCard = "${baseImage}tap-card-hUtpX1Jiqu.png";
-
+  static String testingReaderId = "tmr_F9o8ywzZIKzDEq";
 
   static Widget getBrandingWidget() {
     return Container(
@@ -73,8 +73,7 @@ class AppUtils {
   static currency(context) {
     Locale locale = Localizations.localeOf(context);
     var format =
-    NumberFormat.simpleCurrency(locale: Platform.localeName, name: "GBP");
+        NumberFormat.simpleCurrency(locale: Platform.localeName, name: "GBP");
     return format;
   }
-
 }
