@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mosque_donation_app/models/post_donation_info_model.dart';
 import 'package:mosque_donation_app/screens/pos_payment_screen.dart';
 import 'package:mosque_donation_app/screens/scan_card_screen.dart';
+import 'package:mosque_donation_app/screens/scan_paymeny_screen.dart';
 import 'package:mosque_donation_app/utils/app_utils.dart';
 import 'package:sizer/sizer.dart';
 
@@ -473,7 +474,10 @@ class _EnterPaymentScreenState extends State<EnterPaymentScreen> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => PosPaymentScreen()));
+                          builder: (context) => ScanPaymenyScreen(
+                                donationAmount:
+                                    donationFixedAmountSelected.toString(),
+                              ))); //PosPaymentScreen()));
 // old functionality
                   // Navigator.push(
                   //     context,

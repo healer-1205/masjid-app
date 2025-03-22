@@ -66,6 +66,7 @@ class _ScanPageState extends State<ScanPage> {
         terminal.discoverReaders(const LocalMobileDiscoveryConfiguration(
       isSimulated: _isSimulated,
     ));
+
     setState(() {
       _discoverReaderSub = discoverReaderStream.listen((readers) async {
         scanStatus = "Reader Discovered";
